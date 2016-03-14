@@ -54,22 +54,29 @@ fn mk_sink<S: Sink + Open + 'static>() -> Box<Sink> {
     Box::new(S::open())
 }
 
-#[cfg(feature = "portaudio-backend")]
+#[cfg(target_os = "linux")]
+mod alsa;
+#[cfg(target_os = "linux")]
+use self::alsa::AlsaSink;
+
+#[cfg(all(not(target_os = "linux"), feature = "portaudio-backend"))]
 mod portaudio;
-#[cfg(feature = "portaudio-backend")]
+#[cfg(all(not(target_os = "linux"), feature = "portaudio-backend"))]
 use self::portaudio::PortAudioSink;
 
-#[cfg(feature = "pulseaudio-backend")]
+#[cfg(all(not(target_os = "linux"), feature = "pulseaudio-backend"))]
 mod pulseaudio;
-#[cfg(feature = "pulseaudio-backend")]
+#[cfg(all(not(target_os = "linux"), feature = "pulseaudio-backend"))]
 use self::pulseaudio::PulseAudioSink;
 
 
 declare_backends! {
     pub const BACKENDS : &'static [(&'static str, &'static (Fn() -> Box<Sink> + Sync + Send + 'static))] = &[
-        #[cfg(feature = "portaudio-backend")]
+        #[cfg(target_os = "linux")]
+        ("alsa", &mk_sink::<AlsaSink>),
+        #[cfg(all(not(target_os = "linux"), feature = "portaudio"))]
         ("portaudio", &mk_sink::<PortAudioSink>),
-        #[cfg(feature = "pulseaudio-backend")]
+        #[cfg(all(not(target_os = "linux"), feature = "libpulse-sys"))]
         ("pulseaudio", &mk_sink::<PulseAudioSink>),
 
     ];

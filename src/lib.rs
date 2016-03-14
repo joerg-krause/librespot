@@ -42,10 +42,11 @@ extern crate dns_sd;
 #[cfg(feature = "openssl")]
 extern crate openssl;
 
-#[cfg(feature = "portaudio")]
+#[cfg(target_os = "linux")]
+extern crate alsa;
+#[cfg(all(not(target_os = "linux"), feature = "portaudio"))]
 extern crate portaudio;
-
-#[cfg(feature = "libpulse-sys")]
+#[cfg(all(not(target_os = "linux"), feature = "libpulse-sys"))]
 extern crate libpulse_sys;
 
 extern crate librespot_protocol as protocol;
