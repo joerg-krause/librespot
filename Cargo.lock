@@ -2,7 +2,7 @@
 name = "librespot"
 version = "0.1.0"
 dependencies = [
- "alsa 0.0.1 (git+https://github.com/plietar/rust-alsa)",
+ "alsa 0.0.1 (git+https://github.com/joerg-krause/rust-alsa)",
  "bit-set 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.64 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -48,7 +48,7 @@ dependencies = [
 [[package]]
 name = "alsa"
 version = "0.0.1"
-source = "git+https://github.com/plietar/rust-alsa#4d790bf9b5fa80f1f5eff9dfd4d33326c3f5fe2c"
+source = "git+https://github.com/joerg-krause/rust-alsa#9cbb71353f559473c936763adf1661b2e8c804d7"
 dependencies = [
  "libc 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

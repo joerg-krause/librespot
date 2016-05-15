@@ -57,7 +57,7 @@ protobuf_macros = { git = "https://github.com/plietar/rust-protobuf-macros" }
 json_macros     = { git = "https://github.com/plietar/json_macros" }
 
 [target.'cfg(unix)'.dependencies]
-alsa            = { git = "https://github.com/plietar/rust-alsa" }
+alsa            = { git = "https://github.com/joerg-krause/rust-alsa" }
 [target.i686-apple-darwin.dependencies]
 portaudio       = { git = "https://github.com/mvdnes/portaudio-rs", optional = true }
 libpulse-sys    = { git = "https://github.com/astro/libpulse-sys", optional = true }
