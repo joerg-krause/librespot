@@ -270,8 +270,6 @@ impl PlayerInternal {
                             None
                         }
                     }
-
-
                 }
                 Some(PlayerCommand::Seek(position)) => {
                     vorbis_time_seek_ms(decoder.as_mut().unwrap(), position as i64).unwrap();
