@@ -9,6 +9,13 @@ keywords = ["spotify"]
 repository = "https://github.com/plietar/librespot"
 readme = "README.md"
 
+[profile.release]
+opt-level = "s"
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+
 [lib]
 name = "librespot"
 path = "src/lib.rs"
