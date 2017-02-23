@@ -3,19 +3,24 @@ extern crate env_logger;
 extern crate futures;
 extern crate getopts;
 extern crate librespot;
-extern crate tokio_core;
+#[macro_use] extern crate tokio_core;
 extern crate tokio_signal;
+extern crate tokio_uds;
 
 use env_logger::LogBuilder;
-use futures::{Future, Async, Poll, Stream};
+
 use std::env;
+use std::fs;
 use std::io::{self, stderr, Write};
+use std::mem;
 use std::path::PathBuf;
 use std::process::exit;
-use std::str::FromStr;
+use std::str::{self, FromStr};
+
+use futures::{Future, Async, Poll, Stream};
 use tokio_core::reactor::{Handle, Core};
 use tokio_core::io::IoStream;
-use std::mem;
+use tokio_uds::UnixDatagram;
 
 use librespot::spirc::{Spirc, SpircTask};
 use librespot::authentication::{get_credentials, Credentials};
@@ -174,6 +179,7 @@ struct Main {
 
     discovery: Option<DiscoveryStream>,
     signal: IoStream<()>,
+    socket: UnixDatagram,
 
     spirc: Option<Spirc>,
     spirc_task: Option<SpircTask>,
@@ -184,6 +190,7 @@ struct Main {
 
 impl Main {
     fn new(handle: Handle,
+           socket: UnixDatagram,
            config: Config,
            cache: Option<Cache>,
            backend: fn(Option<String>) -> Box<Sink>,
@@ -204,6 +211,7 @@ impl Main {
             spirc_task: None,
             shutdown: false,
             signal: tokio_signal::ctrl_c(&handle).flatten_stream().boxed(),
+            socket: socket,
         }
     }
 
@@ -230,9 +238,9 @@ impl Main {
 
 impl Future for Main {
     type Item = ();
-    type Error = ();
+    type Error = io::Error;
 
-    fn poll(&mut self) -> Poll<(), ()> {
+    fn poll(&mut self) -> Poll<(), io::Error> {
         loop {
             let mut progress = false;
 
@@ -277,6 +285,27 @@ impl Future for Main {
                 progress = true;
             }
 
+            if let Async::Ready(()) = self.socket.poll_read() {
+                let mut buf: Vec<u8> = vec![0; 16];
+                let count: usize = try_nb!(self.socket.recv_from(&mut buf)).0;
+                let command = str::from_utf8(buf[..count].as_mut()).unwrap();
+
+                if let Some(ref spirc) = self.spirc {
+                    match command {
+                        "play" => spirc.play(),
+                        "playpause" => spirc.play_pause(),
+                        "pause"|"stop" => spirc.pause(),
+                        "next" => spirc.next(),
+                        "prev" => spirc.prev(),
+                        "volumeup" => spirc.volume_up(),
+                        "volumedown" => spirc.volume_down(),
+                        _ => (),
+                    }
+                }
+
+                progress = true;
+            }
+
             if let Some(ref mut spirc_task) = self.spirc_task {
                 if let Async::Ready(()) = spirc_task.poll().unwrap() {
                     if self.shutdown {
@@ -295,13 +324,20 @@ impl Future for Main {
 }
 
 fn main() {
+    static PATH: &'static str = "/var/run/librespot.sock";
+
     let mut core = Core::new().unwrap();
     let handle = core.handle();
+
+    let socket = UnixDatagram::bind(PATH, &handle).unwrap_or_else(|_| {
+        fs::remove_file(PATH).unwrap();
+        UnixDatagram::bind(PATH, &handle).unwrap()
+    });
 
     let args: Vec<String> = std::env::args().collect();
     let Setup { backend, config, device, cache, enable_discovery, credentials, mixer } = setup(&args);
 
-    let mut task = Main::new(handle, config.clone(), cache, backend, device, mixer);
+    let mut task = Main::new(handle, socket, config.clone(), cache, backend, device, mixer);
     if enable_discovery {
         task.discovery();
     }
